@@ -12,11 +12,13 @@ class Controller:
 
         while True:
             phone = self.view.ask_phone()
-
-            if self.model.phone_exists(phone):
-                self.view.show_message("Такой номер уже есть")
-                continue
-
+            try:
+                if self.model.phone_exists(phone):
+                    raise PhoneAlreadyExists
+            except PhoneAlreadyExists as err:
+                self.view.show_message(str(err))
+                print(type(err).__name__)
+                return
             name = self.view.ask_name()
             comment = self.view.ask_comment()
 
@@ -33,7 +35,7 @@ class Controller:
 
     def see_all(self) -> None:
         try:
-            self.model.read_contacts()
+            print(self.model.read_contacts())
         except FileNotExist as err:
             self.view.show_message(str(err))
             print(type(err).__name__)
@@ -42,9 +44,7 @@ class Controller:
             phone = self.view.ask_phone()
 
             try:
-                contact = self.model.find_contact(phone)
-                print(json.dumps(contact, indent=4, ensure_ascii=False))
-
+                print(self.model.find_contact(phone))
             except PhoneNotExist as err:
                 self.view.show_message(str(err))
                 print(type(err).__name__)
@@ -52,12 +52,13 @@ class Controller:
     def edit_one(self) -> None:
         """Управляет редактированием контакта."""
         phone = self.view.ask_phone()
-
-        if not self.model.phone_exists(phone):
-            self.view.show_message("Телефон не найден.")
-            """Сначала проверяем, существует ли контакт"""
+        try:
+            if not self.model.phone_exists(phone):
+                raise PhoneNotExist()
+        except PhoneNotExist as err:
+            self.view.show_message(str(err))
+            print(type(err).__name__)
             return
-
         new_name = self.view.new_name()
         new_phone = self.view.new_phone()
         new_comment = self.view.new_comment()
@@ -74,10 +75,6 @@ class Controller:
     def delete_one(self) -> None:
         phone = self.view.ask_phone()
 
-        if not self.model.phone_exists(phone):
-            self.view.show_message("Телефон не найден.")
-            """Сначала проверяем, существует ли контакт"""
-            return
         try:
             self.model.delete_contact(phone)
             self.view.show_message("Контакт удален")
@@ -105,4 +102,5 @@ class Controller:
             except WrongCommand as err:
                 self.view.show_message(str(err))
                 print(type(err).__name__)
+
 
